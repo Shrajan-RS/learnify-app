@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import bcryptjs from "bcryptjs";
+import { type } from "os";
 
 const userSchema = new Schema(
   {
@@ -8,7 +9,6 @@ const userSchema = new Schema(
       required: true,
       trim: true,
       lowercase: true,
-      unique: true,
       minLength: [3, "User Name Must At Least 3 Characters Long!"],
     },
 
@@ -24,6 +24,12 @@ const userSchema = new Schema(
       required: true,
       minLength: [6, "Password must be at least 6 characters long!"],
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: String,
+    verificationTokenExpires: Date,
   },
   { timestamps: true }
 );
