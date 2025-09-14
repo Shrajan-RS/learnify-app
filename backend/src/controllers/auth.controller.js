@@ -44,7 +44,39 @@ const signup = asyncHandler(async (req, res) => {
   );
 });
 
-const verification = asyncHandler(async (req, res) => {});
+const verification = asyncHandler(async (req, res) => {
+  const { email, OTP } = req.body;
+
+  if (!email || email.trim() === "")
+    throw new ApiError(400, "Please Enter Email!");
+  if (!OTP || OTP.trim() === "") throw new ApiError(400, "Please Enter OTP!");
+
+  const user = await User.findOne({
+    email,
+  });
+
+  if (!user) throw new ApiError(404, "User Not Found!");
+
+  if (OTP !== user.verificationToken) throw new ApiError(400, "Invalid OTP!");
+
+  if (user.verificationTokenExpires < Date.now())
+    throw new ApiError(400, "Expired OTP!");
+
+  user.isVerified = true;
+  user.verificationToken = null;
+  user.verificationTokenExpires = null;
+
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(200, "Email Verified Successfully!", {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      isVerified: user.isVerified,
+    })
+  );
+});
 
 const login = asyncHandler(async (req, res) => {});
 
