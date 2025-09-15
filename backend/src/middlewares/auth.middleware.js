@@ -8,6 +8,9 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded) throw new ApiError(401, "Not Authorized, Invalid Token!");
+    
     req.user = decoded;
     next();
   } catch (error) {

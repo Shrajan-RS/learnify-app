@@ -16,6 +16,6 @@ router.post("/signup", signup);
 router.post("/verify", verification);
 router.post("/login", ratelimiter, login);
 // router.get("/home", authMiddleware, (res, req) => {});
-router.post("/logout", logout);
+router.post("/logout", authMiddleware, logout);
 
 export { router };
