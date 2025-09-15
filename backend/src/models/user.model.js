@@ -32,8 +32,8 @@ const userSchema = new Schema(
     verificationTokenExpires: Date,
     role: {
       type: String,
-      enum: ["user", "admin", "moderator"],
-      default: "user",
+      enum: ["student", "lecturer"],
+      default: "student",
     },
   },
   { timestamps: true }

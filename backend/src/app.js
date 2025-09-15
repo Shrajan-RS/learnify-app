@@ -1,14 +1,16 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { router as userAuth } from "./routes/auth.route.js";
-import errorHandler from "./middlewares/errorHandler.js";
+import errorHandler from "./middlewares/error.handler.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(cookieParser());
 
 app.use("/api/v1/auth/user", userAuth);
 
