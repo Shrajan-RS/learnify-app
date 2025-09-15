@@ -30,6 +30,11 @@ const userSchema = new Schema(
     },
     verificationToken: String,
     verificationTokenExpires: Date,
+    role: {
+      type: String,
+      enum: ["user", "admin", "moderator"],
+      default: "user",
+    },
   },
   { timestamps: true }
 );

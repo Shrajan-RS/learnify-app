@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
+import generateJWTToken from "../utils/helperFunctions/generateJWTToken.js";
 
 const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -78,8 +79,53 @@ const verification = asyncHandler(async (req, res) => {
   );
 });
 
-const login = asyncHandler(async (req, res) => {});
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-const logout = asyncHandler(async (req, res) => {});
+  if ([email, password].some((field) => !field || field.trim() === ""))
+    throw new ApiError(400, "All Fields Must Be Filled!");
+
+  const user = await User.findOne({ email });
+
+  if (!user) throw new ApiError(404, "User Not Found!");
+
+  if (!user.isVerified)
+    throw new ApiError(400, "Create An Account Before Logging!");
+
+  const isPasswordMatch = await user.comparePassword(password);
+
+  if (!isPasswordMatch) throw new ApiError(401, "Invalid Credentials!");
+
+  const token = generateJWTToken({
+    id: user._id,
+    name: user.name,
+    role: user.role,
+  });
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 1 * 60 * 60 * 1000,
+  });
+
+  res.status(200).json(
+    new ApiResponse(200, "User Logged In Successfully!", {
+      id: user._id,
+      name: user.name,
+      token: token,
+    })
+  );
+});
+
+const logout = asyncHandler(async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  res.status(200).json(new ApiResponse(200, "Logged Out Successfully!"));
+});
 
 export { signup, verification, login, logout };
