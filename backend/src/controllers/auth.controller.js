@@ -8,21 +8,14 @@ import ApiError from "../utils/ApiError.js";
 import generateJWTToken from "../utils/helperFunctions/generateJWTToken.js";
 
 const signup = asyncHandler(async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
+  const { name, email, password } = req.body;
 
-  if (
-    [name, email, password, confirmPassword].some(
-      (field) => !field || field.trim() === ""
-    )
-  ) {
+  if ([name, email, password].some((field) => !field || field.trim() === "")) {
     throw new ApiError(400, "All Fields Must Be Filled!");
   }
 
   const userExist = await User.findOne({ email });
   if (userExist) throw new ApiError(409, "User Already Exist!");
-
-  if (confirmPassword !== password)
-    throw new ApiError(400, "Incorrect Password!");
 
   const verificationToken = crypto.randomInt(100000, 1000000).toString();
 

@@ -8,7 +8,7 @@ import { Routes, Route } from "react-router-dom";
 
 const App = () => {
   return (
-    <main className="min-h-dvh w-full">
+    <main className="min-h-screen w-full box-border p-0 m-0">
       {/* <Navbar /> */}
 
       <Routes>

@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import bcryptjs from "bcryptjs";
-import { type } from "os";
 
 const userSchema = new Schema(
   {
@@ -16,6 +15,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      lowercase:true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
     },
 
