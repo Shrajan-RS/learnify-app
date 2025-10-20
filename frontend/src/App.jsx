@@ -6,6 +6,8 @@ import HomePage from "./pages/HomePage";
 
 import { Routes, Route } from "react-router-dom";
 
+export const baseServerURI = "http://localhost:7000/api/v1/auth/user";
+
 const App = () => {
   return (
     <main className="min-h-screen w-full box-border p-0 m-0">

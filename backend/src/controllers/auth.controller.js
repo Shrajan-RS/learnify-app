@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import bcryptjs from "bcryptjs";
 
 import { User } from "../models/user.model.js";
 
@@ -6,43 +7,34 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import generateJWTToken from "../utils/helperFunctions/generateJWTToken.js";
+import validateCredentials from "../utils/helperFunctions/validator.js";
 
 const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
-  if ([name, email, password].some((field) => !field || field.trim() === "")) {
-    throw new ApiError(400, "All Fields Must Be Filled!");
-  }
+  const errorMessage = validateCredentials(name, email, password);
+
+  if (errorMessage) throw new ApiError(400, errorMessage);
 
   const userExist = await User.findOne({ email });
   if (userExist) throw new ApiError(409, "User Already Exist!");
 
   const verificationToken = crypto.randomInt(100000, 1000000).toString();
 
-  const newUser = new User({
+  const hashedPassword = await bcryptjs.hash(
+    password,
+    Number(process.env.SALT_ROUNDS)
+  );
+
+  const newUser = await User.create({
     name,
     email,
-    password,
+    password: hashedPassword,
     verificationToken,
     verificationTokenExpires: Date.now() + 10 * 60 * 1000,
   });
 
-  await newUser.save();
-
-  // sendVerificationOTP({
-  //   name: newUser.name,
-  //   email: newUser.email,
-  //   OTP: newUser.verificationToken,
-  // });
-
-  res.status(201).json(
-    new ApiResponse(201, "User Created Successfully!", {
-      id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      isVerified: newUser.isVerified,
-    })
-  );
+  res.status(201).json(new ApiResponse(201, "User Created Successfully!"));
 });
 
 const verification = asyncHandler(async (req, res) => {
@@ -128,4 +120,32 @@ const logout = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, "Logged Out Successfully!"));
 });
 
-export { signup, verification, login, logout };
+const googleSignUp = asyncHandler(async (req, res) => {
+  const { name, email } = req.body;
+
+  if ([name, email].some((field) => !field || field.trim() === "")) {
+    throw new ApiError(500, "Something Went Wrong, Try Again Later!");
+  }
+
+  const useExist = await User.findOne({ email });
+
+  if (useExist)
+    throw new ApiError(407, "User Already Exist, Go To Login Page!");
+
+  const verificationToken = crypto.randomInt(100000, 1000000).toString();
+
+  const newUser = await User.create({
+    name,
+    email,
+    verificationToken,
+    verificationTokenExpires: Date.now() + 10 * 60 * 1000,
+  });
+
+  console.log(newUser);
+
+  res
+    .status(201)
+    .json(new ApiResponse(201, "User Created Successfully!", newUser));
+});
+
+export { signup, googleSignUp, verification, login, logout };

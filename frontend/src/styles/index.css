@@ -1,2 +1,20 @@
 @import "tailwindcss";
 
+/* Autofill background fix for Chrome, Edge, Safari */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  /* Force dark background instead of white/yellow autofill color */
+  -webkit-box-shadow: 0 0 0px 1000px #232630 inset !important;
+
+  /* Keep text white */
+  -webkit-text-fill-color: #ffffff !important;
+
+  /* Keep blinking caret visible */
+  caret-color: #ffffff !important;
+
+  /* Prevent background transition flicker */
+  transition: background-color 9999s ease-in-out 0s !important;
+}
