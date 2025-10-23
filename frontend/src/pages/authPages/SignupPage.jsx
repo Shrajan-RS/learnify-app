@@ -1,28 +1,43 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
+import { baseServerURI } from "../../App";
+
 import { IoPersonSharp } from "react-icons/io5";
 import { MdOutlineMail } from "react-icons/md";
 import { RiLockPasswordFill } from "react-icons/ri";
 import { FcGoogle } from "react-icons/fc";
-
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa6";
+import { HiOutlineMailOpen } from "react-icons/hi";
+import { RiSendPlaneFill } from "react-icons/ri";
+import { FaHome } from "react-icons/fa";
 
 import axios from "axios";
-import { baseServerURI } from "../../App";
+import { Link } from "react-router-dom";
 
-import auth from "../../../../backend/src/services/firebaseAuth.js";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { useEffect } from "react";
+import { googleAuth } from "../../services/firebaseAuth";
+
+import {
+  customNotification,
+  failedNotification,
+  successNotification,
+} from "../../utils/notification";
+
+import { useNavigate } from "react-router-dom";
 
 function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState({ message: "" });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isDisabled, setIsDisabled] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
+
+  const userNavigation = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -35,6 +50,8 @@ function SignupPage() {
     e.preventDefault();
 
     try {
+      setIsDisabled(true);
+
       const serverResponse = await axios.post(
         `${baseServerURI}/signup`,
         formData,
@@ -42,40 +59,81 @@ function SignupPage() {
           withCredentials: true,
         }
       );
+      setFormData({ name: "", email: "", password: "" });
 
-      console.log(serverResponse.response);
-    } catch (error) {
-      setErrorMessage({
-        message: error.response?.data?.message || "Something Went Wrong!",
+
+      successNotification({
+        message: "Redirecting to Verification page",
+        icon: <RiSendPlaneFill />,
       });
+
+      setTimeout(() => {
+        userNavigation("/auth");
+      }, 2500);
+    } catch (error) {
+      setIsDisabled(false);
+
+      const message = error.response?.data?.message || "Something Went Wrong!";
+
+      setErrorMessage(message);
+
+      if (message.toString().includes("taken")) {
+        customNotification({ icon: <HiOutlineMailOpen />, message });
+      }
+    } finally {
+      setIsDisabled(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
-    const googleProvider = new GoogleAuthProvider();
+    try {
+      setIsDisabled(true);
 
-    const googleResponse = await signInWithPopup(auth, googleProvider);
+      const googleProvider = new GoogleAuthProvider();
+      const googleResponse = await signInWithPopup(googleAuth, googleProvider);
+      const user = {
+        name: googleResponse.user.displayName,
+        email: googleResponse.user.email,
+      };
+      const serverResponse = await axios.post(
+        `${baseServerURI}/google-signup`,
+        user,
+        { withCredentials: true }
+      );
 
-    const user = {
-      name: googleResponse.user.displayName,
-      email: googleResponse.user.email,
-    };
 
-    const serverResponse = await axios.post(
-      `${baseServerURI}/google-signup`,
-      user,
-      { withCredentials: true }
-    );
+      successNotification({
+        message: "Redirecting to Home page",
+        icon: <FaHome />,
+      });
+
+      setTimeout(() => {
+        userNavigation("/");
+      }, 2500);
+    } catch (error) {
+      setIsDisabled(false);
+
+      const message = error.response?.data?.message || "Something Went Wrong!";
+
+      setErrorMessage(message);
+
+      failedNotification({
+        message,
+        duration: 2800,
+      });
+
+    } finally {
+      setIsDisabled(false);
+    }
   };
 
   useEffect(() => {
-    if (!errorMessage) return; // no need to set timeout if no error
+    if (!errorMessage) return;
 
     const timer = setTimeout(() => {
       setErrorMessage("");
-    }, 1500);
+    }, 2500);
 
-    // Cleanup function
     return () => clearTimeout(timer);
   }, [errorMessage]);
 
@@ -126,6 +184,11 @@ function SignupPage() {
                     />
                   </div>
                 </div>
+                {errorMessage.includes("Name") && (
+                  <p className="text-red-500 mb-4 h-0.5 text-[12px] sm:text-[15px]">
+                    {errorMessage}
+                  </p>
+                )}
               </div>
 
               <div className="w-full p-2.5 text-white flex gap-2 flex-col font-medium">
@@ -149,6 +212,11 @@ function SignupPage() {
                     />
                   </div>
                 </div>
+                {errorMessage.includes("Email") && (
+                  <p className="text-red-500 mb-4 h-0.5 text-[12px] sm:text-[15px]">
+                    {errorMessage}
+                  </p>
+                )}
               </div>
 
               <div className="w-full p-2.5 text-white flex gap-2 flex-col font-medium">
@@ -180,26 +248,36 @@ function SignupPage() {
                     </button>
                   </div>
                 </div>
+
+                {errorMessage.includes("Password") && (
+                  <p className="text-red-500 mb-4 h-0.5 text-[12px] sm:text-[15px]">
+                    {errorMessage}
+                  </p>
+                )}
+
                 <button
-                  className="
+                  className={`
    w-full 
     px-5 
     py-1.5 
-    bg-purple-700
+   ${
+     isDisabled
+       ? "bg-purple-700/10 cursor-no-drop"
+       : "bg-purple-700 cursor-pointer hover:bg-purple-700/60"
+   }
     my-4
     rounded-md 
     text-xl 
     font-semibold 
     text-white 
-    cursor-pointer
     transition-all 
     duration-300 
     flex items-center
     justify-center gap-2
     capitalize
-    hover:bg-purple-700/60
-  "
+  `}
                   type="submit"
+                  disabled={isDisabled}
                 >
                   Sign Up
                 </button>
@@ -214,24 +292,26 @@ function SignupPage() {
           </div>
           <div className="w-full px-2">
             <button
-              className="
+              className={`
       w-full 
     px-5 
     py-1.5 
-    bg-black
+    ${
+      isDisabled
+        ? "bg-black/5 cursor-no-drop"
+        : "bg-black hover:bg-white/5 cursor-pointer"
+    }
     my-4
     rounded-md 
     text-xl 
     font-semibold 
     text-white 
-    cursor-pointer
     transition-all 
     duration-300 
     flex items-center
     justify-center gap-2
     capitalize
-    hover:bg-white/5
-  "
+  `}
               onClick={handleGoogleSignUp}
             >
               <span>
@@ -240,11 +320,16 @@ function SignupPage() {
               Google
             </button>
           </div>
-          {errorMessage && (
-            <p className="text-xl text-red-600 transition-all duration-200 ease-in">
-              {errorMessage.message}
-            </p>
-          )}
+          <p className="text-[15px] text-gray-400 capitalize text-center">
+            already have an account?
+            <Link
+              className="text-[#9000ff] hover:underline hover:scale-50"
+              to={"/login"}
+            >
+              {" "}
+              Login
+            </Link>
+          </p>
         </div>
       </div>
     </section>

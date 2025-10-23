@@ -5,6 +5,7 @@ import {
   googleSignUp,
   verification,
   login,
+  googleLogin,
   logout,
 } from "../controllers/auth.controller.js";
 
@@ -15,10 +16,11 @@ const router = Router();
 
 router.post("/signup", ratelimiter, signup);
 
-router.post("/google-signup", ratelimiter, googleSignUp)
+router.post("/google-signup", ratelimiter, googleSignUp);
 
 router.post("/verify", verification);
 router.post("/login", ratelimiter, login);
+router.post("/google-login", ratelimiter, googleLogin);
 // router.get("/home", authMiddleware, (res, req) => {});
 router.post("/logout", authMiddleware, logout);
 
