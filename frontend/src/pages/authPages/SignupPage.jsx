@@ -61,7 +61,6 @@ function SignupPage() {
       );
       setFormData({ name: "", email: "", password: "" });
 
-
       successNotification({
         message: "Redirecting to Verification page",
         icon: <RiSendPlaneFill />,
@@ -101,7 +100,6 @@ function SignupPage() {
         { withCredentials: true }
       );
 
-
       successNotification({
         message: "Redirecting to Home page",
         icon: <FaHome />,
@@ -121,7 +119,6 @@ function SignupPage() {
         message,
         duration: 2800,
       });
-
     } finally {
       setIsDisabled(false);
     }

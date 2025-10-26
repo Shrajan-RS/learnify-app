@@ -11,8 +11,14 @@ const signupValidator = (name, email, password) => {
 
 const loginValidator = (email, password) => {
   if (!email || email.trim() === "") return "Email is required!";
-  if (!regex.test(email)) return "Please Provide a Valid Email Address";
+  if (!regex.test(email)) return "Please Provide a Valid Email Address!";
   if (!password || password.trim() === "") return "Password is required!";
 };
 
-export { signupValidator, loginValidator };
+const OTPValidator = (OTP) => {
+  if (OTP.trim() === "") return "OTP Is Required!";
+
+  if (OTP.length < 6 || OTP.length > 6) return "Enter 6 Digit OTP!";
+};
+
+export { signupValidator, loginValidator, OTPValidator };

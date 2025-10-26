@@ -9,6 +9,7 @@ import ApiError from "../utils/ApiError.js";
 import generateJWTToken from "../utils/helperFunctions/generateJWTToken.js";
 import {
   loginValidator,
+  OTPValidator,
   signupValidator,
 } from "../utils/helperFunctions/validator.js";
 import { sendOTP } from "../utils/helperFunctions/nodeMailer.js";
@@ -38,23 +39,37 @@ const signup = asyncHandler(async (req, res) => {
     verificationTokenExpires: Date.now() + 10 * 60 * 1000,
   });
 
+  const token = generateJWTToken({
+    id: newUser._id,
+    role: newUser.role,
+  });
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" || false,
+    sameSite: "strict",
+    maxAge: 1 * 60 * 60 * 1000,
+  });
+
   sendOTP({ toEmail: newUser.email, OTP: verificationToken, name });
 
   res.status(201).json(new ApiResponse(201, "User Created Successfully!"));
 });
 
 const verification = asyncHandler(async (req, res) => {
-  const { email, OTP } = req.body;
+  const { OTP } = req.body;
 
-  if (!email || email.trim() === "")
-    throw new ApiError(400, "Please Enter Email!");
-  if (!OTP || OTP.trim() === "") throw new ApiError(400, "Please Enter OTP!");
+  const errorMessage = OTPValidator(OTP);
 
-  const user = await User.findOne({
-    email,
-  });
+  if (errorMessage) res.status(400).json(new ApiError(400, errorMessage));
+
+  const userId = req.user?.id;
+
+  const user = await User.findById(userId);
 
   if (!user) throw new ApiError(404, "User Not Found!");
+
+  if (user.isVerified) throw new ApiError(400, "Email is Verified!");
 
   if (OTP !== user.verificationToken) throw new ApiError(400, "Invalid OTP!");
 
@@ -62,8 +77,10 @@ const verification = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Expired OTP!");
 
   user.isVerified = true;
-  user.verificationToken = null;
-  user.verificationTokenExpires = null;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined;
+
+  await user.save();
 
   res.status(200).json(
     new ApiResponse(200, "Email Verified Successfully!", {
@@ -101,7 +118,6 @@ const login = asyncHandler(async (req, res) => {
 
   const token = generateJWTToken({
     id: user._id,
-    name: user.name,
     role: user.role,
   });
 
@@ -181,4 +197,36 @@ const googleLogin = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User Logged In Successfully!", user));
 });
 
-export { signup, googleSignUp, verification, login, googleLogin, logout };
+const resendOTP = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  const user = await User.findById(userId);
+
+  if (!user) throw new ApiError(400, "User Not Found!");
+
+  if (user.isVerified) throw new ApiError(400, "Email Is Already Verified!");
+
+  const verificationToken = crypto.randomInt(100000, 1000000).toString();
+
+  sendOTP({ toEmail: user.email, name: user.name, OTP: verificationToken });
+
+  user.verificationToken = verificationToken;
+  user.verificationTokenExpires = Date.now() + 10 * 60 * 1000;
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(200, "OTP Has Been Sent To Your Email!", {
+      user,
+    })
+  );
+});
+
+export {
+  signup,
+  googleSignUp,
+  verification,
+  resendOTP,
+  login,
+  googleLogin,
+  logout,
+};
