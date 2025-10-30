@@ -21,12 +21,14 @@ import { googleAuth } from "../../services/firebaseAuth";
 import {
   customNotification,
   failedNotification,
-  successNotification,
 } from "../../utils/notification";
 
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
 
 function SignupPage() {
+  const { getCurrentUser } = useUser();
+
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
@@ -61,15 +63,14 @@ function SignupPage() {
       );
       setFormData({ name: "", email: "", password: "" });
 
-      successNotification({
-        message: "Redirecting to Verification page",
-        icon: <RiSendPlaneFill />,
-      });
+      await getCurrentUser();
 
       setTimeout(() => {
         userNavigation("/auth");
       }, 2500);
     } catch (error) {
+      console.log(error);
+
       setIsDisabled(false);
 
       const message = error.response?.data?.message || "Something Went Wrong!";
@@ -100,10 +101,7 @@ function SignupPage() {
         { withCredentials: true }
       );
 
-      successNotification({
-        message: "Redirecting to Home page",
-        icon: <FaHome />,
-      });
+      await getCurrentUser();
 
       setTimeout(() => {
         userNavigation("/");

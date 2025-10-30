@@ -22,12 +22,14 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import {
   customNotification,
   failedNotification,
-  successNotification,
 } from "../../utils/notification";
 
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
 
 const LoginPage = () => {
+  const { getCurrentUser } = useUser();
+
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
@@ -61,11 +63,7 @@ const LoginPage = () => {
       );
 
       setFormData({ email: "", password: "" });
-
-      successNotification({
-        message: "Redirecting to Home",
-        icon: <FaHome />,
-      });
+      await getCurrentUser();
 
       setTimeout(() => {
         userNavigation("/");
@@ -94,7 +92,8 @@ const LoginPage = () => {
       if (message.includes("Requests"))
         failedNotification({ message, size: 50 });
 
-      if (message.includes("authentication")) failedNotification({ message,size:50 });
+      if (message.includes("authentication"))
+        failedNotification({ message, size: 50 });
 
       if (requestMessage.includes("Requests"))
         failedNotification({ message: requestMessage });
@@ -118,10 +117,7 @@ const LoginPage = () => {
         { withCredentials: true }
       );
 
-      successNotification({
-        message: "Redirecting to Home",
-        icon: <FaHome />,
-      });
+      await getCurrentUser();
 
       setTimeout(() => {
         userNavigation("/");

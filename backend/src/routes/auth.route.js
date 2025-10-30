@@ -21,13 +21,11 @@ router.post("/google-signup", ratelimiter, googleSignUp);
 
 router.post("/verify", authMiddleware, verification);
 
-router.post("/resend-otp", authMiddleware, resendOTP)
+router.post("/resend-otp", authMiddleware, resendOTP);
 
 router.post("/login", ratelimiter, login);
 
 router.post("/google-login", ratelimiter, googleLogin);
-
-// router.get("/home", authMiddleware, (res, req) => {});
 
 router.post("/logout", authMiddleware, logout);
 

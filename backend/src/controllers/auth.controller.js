@@ -48,7 +48,7 @@ const signup = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" || false,
     sameSite: "strict",
-    maxAge: 1 * 60 * 60 * 1000,
+    maxAge: 7 * 2460 * 60 * 1000,
   });
 
   sendOTP({ toEmail: newUser.email, OTP: verificationToken, name });
@@ -125,7 +125,7 @@ const login = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" || false,
     sameSite: "strict",
-    maxAge: 1 * 60 * 60 * 1000,
+    maxAge: 7 * 2460 * 60 * 1000,
   });
 
   res.status(200).json(
@@ -165,6 +165,19 @@ const googleSignUp = asyncHandler(async (req, res) => {
     isVerified: true,
   });
 
+  const token = generateJWTToken({
+    id: newUser._id,
+    name: newUser.name,
+    role: newUser.role,
+  });
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" || false,
+    sameSite: "strict",
+    maxAge: 7 * 2460 * 60 * 1000,
+  });
+
   res
     .status(201)
     .json(new ApiResponse(201, "User Created Successfully!", newUser));
@@ -189,7 +202,7 @@ const googleLogin = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" || false,
     sameSite: "strict",
-    maxAge: 1 * 60 * 60 * 1000,
+    maxAge: 7 * 2460 * 60 * 1000,
   });
 
   res
