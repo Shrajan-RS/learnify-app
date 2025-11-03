@@ -31,6 +31,8 @@ const userSchema = new Schema(
       enum: ["student", "lecturer"],
       default: "student",
     },
+
+    message: [{ type: Schema.Types.ObjectId, ref: "UserChat" }],
   },
   { timestamps: true }
 );

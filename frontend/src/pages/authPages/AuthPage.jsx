@@ -13,6 +13,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
+import { useUser } from "../../context/UserContext";
 
 function AuthPage() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -20,6 +21,8 @@ function AuthPage() {
   const [OTP, setOTP] = useState({ OTP: "" });
   const [time, setTime] = useState(10);
   const [disableResendOTP, setDisableResendOTP] = useState(false);
+
+  const { getCurrentUser } = useUser();
 
   const userNavigation = useNavigate();
 
@@ -60,16 +63,7 @@ function AuthPage() {
         withCredentials: true,
       });
 
-      successNotification({
-        message: serverResponse.data?.message,
-      });
-
-      setTimeout(() => {
-        successNotification({
-          message: "Redirecting to the Home Page!",
-          icon: <FaHome />,
-        });
-      }, 2800);
+      await getCurrentUser();
 
       setTimeout(() => {
         userNavigation("/");

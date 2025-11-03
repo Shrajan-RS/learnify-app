@@ -3,6 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const messageSchema = new Schema(
   {
     userPromptType: { type: String, required: true },
+    userPromptTitle: { type: String,},
     userPrompt: { type: String, required: true },
     aiResponse: { type: String, required: true },
   },
