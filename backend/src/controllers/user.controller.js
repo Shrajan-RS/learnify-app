@@ -19,31 +19,35 @@ const summarize = asyncHandler(async (req, res) => {
   const { id } = req.user;
 
   const customSummarizePrompt = `
-  Summarize the following user-provided content. 
+You are a precise summarization model.
 
-Your goal:
-- Give a small 1 liner title for the content with a key like "title:"
-- Give a key at the beginning of the main content like "content:"
--Do not include any "* or #" in the title or the content
-- Extract and organize the main ideas.
-- Remove redundancy, tangents, and filler.
-- Keep it factually accurate and neutral in tone.
-- Adjust summary length based on how detailed the original text is.
-- Preserve any structure (like steps, arguments, or conclusions) if relevant.
--If the content have any unwanted bullet points or whitespaces remove it.
+Your task:
 
-Content:
-${content}
+* Read the following user-provided content carefully.
+* Generate a short and relevant 1-line title for the content. Start with: "title: <your title here>"
+* Then summarize the content clearly under the key "content:".
+* Under "content:", present the summary in clean, concise points that each start with "*".
+* Focus on the core ideas, main arguments, and logical flow.
+* Remove redundant phrases, tangents, or filler words.
+* Keep the summary factually accurate, neutral, and well-organized.
+* Preserve structure if the original text includes steps, arguments, or conclusions.
+* Do not include any markdown symbols or formatting.
+* Make sure the title and points are contextually relevant to the content.
+
+Content: ${content}
   `;
 
   const geminiResponse = await generateGeminiResponse(customSummarizePrompt);
 
+  console.log(geminiResponse?.text);
+
   const [titlePart, contentPart] = geminiResponse.text.split("content:");
 
   const title = titlePart.replace("title:", "").trim(" ");
-  const aiResponse = contentPart.replaceAll("*", "");
+  const aiResponse = contentPart;
 
-  console.log(aiResponse);
+  console.log("title: ", title);
+  console.log("content: ", aiResponse);
 
   const message = await UserChat.create({
     user: id,
@@ -66,4 +70,47 @@ ${content}
   res.status(200).json(new ApiResponse(200, "success", message.messages));
 });
 
-export { getCurrentUser, summarize };
+const flashCard = asyncHandler(async (req, res) => {
+  const { content, option } = req.body;
+
+  const { id } = req.user;
+
+  const customFlashcardPrompt = `
+  I want you to act as an expert flashcard creator.
+Your goal is to generate high-quality, concise, and easy-to-memorize flashcards from the text I'll provide.
+
+✅ Instructions:
+
+-Each flashcard must have a Question (Q) and Answer (A).
+
+-Questions should focus on key concepts, definitions, causes, effects, examples, and implications.
+
+-Answers should be brief but complete, using simple, modern language.
+
+-Avoid repetition, filler, or long paragraphs.
+
+-Group related flashcards by themes or sections if the text has multiple ideas.
+
+-Keep the tone clear, modern, and study-friendly (no robotic phrasing).
+
+-directly Give the response in the form of array of object
+
+
+Format consistently like this:
+Q: [Question here]  
+A: [Answer here]  
+
+Here’s the text to turn into flashcards:
+${content}
+  `;
+
+  const geminiResponse = await generateGeminiResponse(customFlashcardPrompt);
+
+  const aiResponse = geminiResponse?.text;
+
+  console.log(aiResponse);
+
+  res.status(200).json(aiResponse);
+});
+
+export { getCurrentUser, summarize, flashCard };

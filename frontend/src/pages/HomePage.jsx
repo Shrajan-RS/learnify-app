@@ -26,13 +26,15 @@ const HomePage = () => {
   const [input, setInput] = useState("");
   const [isSendDisabled, setIsSendDisabled] = useState(true);
 
-  const [selectedOption, setSelectedOption] = useState("summarize");
+  const [selectedOption, setSelectedOption] = useState("flashcard");
+
+  let flashcardData = [];
 
   const [loading, setLoading] = useState(false);
 
   const [geminiResponse, setGeminiResponse] = useState("");
 
-  const [responseCard, setResponseCard] = useState(false);
+  const [responseCard, setResponseCard] = useState(true);
 
   const [title, setTitle] = useState("");
 
@@ -45,8 +47,6 @@ const HomePage = () => {
       } else {
         setIsSendDisabled(true);
       }
-
-      console.log(wordLength);
     };
 
     getWordLength();
@@ -87,11 +87,25 @@ const HomePage = () => {
   };
 
   const handleCopyClipBoard = () => {
-    navigator.clipboard.writeText(geminiResponse);
-    customNotification({
-      icon: <FaClipboardCheck />,
-      message: "Copied to clipboard!",
-    });
+    if (selectedOption === "flashcard") {
+      // Convert Q/A array to plain text
+      const textToCopy = flashcardData
+        .map((item) => `Q: ${item.Q}\nA: ${item.A}`)
+        .join("\n\n");
+
+      navigator.clipboard.writeText(textToCopy);
+
+      customNotification({
+        icon: <FaClipboardCheck />,
+        message: "Copied to clipboard!",
+      });
+    } else if (selectedOption === "summarize") {
+      navigator.clipboard.writeText(geminiResponse);
+      customNotification({
+        icon: <FaClipboardCheck />,
+        message: "Copied to clipboard!",
+      });
+    }
   };
 
   const handleFormSubmit = async (e) => {
@@ -101,28 +115,46 @@ const HomePage = () => {
       option: selectedOption,
     };
 
-    if (selectedOption != "summarize")
-      return failedNotification({
-        message: "Other features are underdevelopment!",
-      });
+    console.log(formData);
 
-    try {
-      setLoading(true);
-      setInput("");
+    if (formData.option === "summarize") {
+      try {
+        setLoading(true);
+        setInput("");
 
-      const serverResponse = await axios.post(
-        `${userProfileURI}/summary`,
-        formData,
-        { withCredentials: true }
-      );
+        const serverResponse = await axios.post(
+          `${userProfileURI}/summary`,
+          formData,
+          { withCredentials: true }
+        );
 
-      setTitle(serverResponse.data?.data[0]?.userPromptTitle);
-      setGeminiResponse(serverResponse.data?.data[0]?.aiResponse);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-      setResponseCard(true);
+        setTitle(serverResponse.data?.data[0]?.userPromptTitle);
+        setGeminiResponse(serverResponse.data?.data[0]?.aiResponse);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+        setResponseCard(true);
+      }
+    } else if (formData.option === "flashcard") {
+      try {
+        setLoading(true);
+        setInput("");
+
+        const serverResponse = await axios.post(
+          `${userProfileURI}/flashcard`,
+          formData,
+          { withCredentials: true }
+        );
+
+        console.log(serverResponse);
+        setGeminiResponse(serverResponse?.data);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+        setResponseCard(true);
+      }
     }
   };
 
@@ -147,20 +179,73 @@ const HomePage = () => {
                 onClick={handleCloseResponse}
               />
             </div>
-            <p className="font-semibold text-2xl text-center">
-              {selectedOption === "summarize" && title != ""
-                ? `Summary of ${title}`
-                : "Summary"}
-            </p>
+            {selectedOption === "summarize" && (
+              <p className="font-semibold text-2xl text-center">
+                {selectedOption === "summarize" && title != ""
+                  ? `Summary of ${title}`
+                  : "Summary"}
+              </p>
+            )}
+
+            {selectedOption === "flashcard" && (
+              <p className="font-semibold text-2xl text-center">
+                {selectedOption === "flashcard" && "Flashcard"}
+              </p>
+            )}
             <div className="w-[90%] h-[1px] bg-white/30"></div>
-            <div className="w-full px-6 text-[18px]">
-              <ul className="list-disc list-inside space-y-2">
-                {geminiResponse?.split(/\n|-/).map((point, index) => {
-                  const trimmed = point.trim();
-                  if (!trimmed) return null;
-                  return <li key={index}>{trimmed}</li>;
-                })}
-              </ul>
+            <div
+              className={`w-full px-6 text-[18px] ${
+                selectedOption === "flashcard" &&
+                "flex justify-center items-center flex-col"
+              }`}
+            >
+              {selectedOption === "summarize" && (
+                <ul className="list-disc space-y-5 px-8">
+                  {geminiResponse
+                    .split("*")
+                    .filter((point) => point.trim() !== "")
+                    .map((point, index) => {
+                      return (
+                        <li className="text-[18px]" key={index}>
+                          {point}
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+
+              {selectedOption === "flashcard" &&
+                (() => {
+                  try {
+                    const cleanResponse = geminiResponse
+                      .replace(/```json|```/g, "")
+                      .trim();
+
+                    flashcardData =
+                      typeof cleanResponse === "string"
+                        ? JSON.parse(cleanResponse)
+                        : cleanResponse;
+                  } catch (err) {
+                    console.error("JSON parse error:", err);
+                    return <p className="text-white">Invalid JSON format</p>;
+                  }
+
+                  console.log(flashcardData);
+
+                  return flashcardData.map((item, index) => (
+                    <div
+                      key={index}
+                      className="w-11/12 p-5 border-b mb-10 border-white/70"
+                    >
+                      <p>
+                        <strong>Q:</strong> {item.Q}
+                      </p>
+                      <p>
+                        <strong>A:</strong> {item.A}
+                      </p>
+                    </div>
+                  ));
+                })()}
             </div>
           </div>
         </div>

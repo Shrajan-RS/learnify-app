@@ -18,3 +18,7 @@ select:-webkit-autofill {
   /* Prevent background transition flicker */
   transition: background-color 9999s ease-in-out 0s !important;
 }
+
+::-webkit-scrollbar {
+display: none;
+}
