@@ -7,12 +7,13 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ClimbingBoxLoader } from "react-spinners";
 import { useUser } from "./context/UserContext";
+import QuizPage from "./pages/QuizPage";
 
 export const baseServerURI = "http://localhost:7000/api/v1/auth/user";
 export const userProfileURI = "http://localhost:7000/api/v1/user";
 
 const App = () => {
-  const { userData, isLoading } = useUser(); 
+  const { userData, isLoading } = useUser();
   const userLoggedIn = !!userData?._id;
   const userVerified = userData?.isVerified;
 
@@ -91,6 +92,8 @@ const App = () => {
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />
+
+        <Route path="/quiz" element={<QuizPage />} />
       </Routes>
     </main>
   );

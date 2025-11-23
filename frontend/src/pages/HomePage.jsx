@@ -17,16 +17,25 @@ import { FaClipboard } from "react-icons/fa";
 import { FaClipboardCheck } from "react-icons/fa";
 import { customNotification, failedNotification } from "../utils/notification";
 
+import * as pdfjsLib from "pdfjs-dist";
+import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+
 const HomePage = () => {
   const { isLoading, userData } = useCurrentUser();
-  const [isNavOpen, setIsNavOpen] = useState(false);
   const { getCurrentUser } = useUser();
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const userNavigation = useNavigate();
   const textareaRef = useRef(null);
   const [input, setInput] = useState("");
   const [isSendDisabled, setIsSendDisabled] = useState(true);
 
-  const [selectedOption, setSelectedOption] = useState("flashcard");
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const [selectedOption, setSelectedOption] = useState("summarize");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
 
   let flashcardData = [];
 
@@ -34,7 +43,7 @@ const HomePage = () => {
 
   const [geminiResponse, setGeminiResponse] = useState("");
 
-  const [responseCard, setResponseCard] = useState(true);
+  const [responseCard, setResponseCard] = useState(false);
 
   const [title, setTitle] = useState("");
 
@@ -88,7 +97,6 @@ const HomePage = () => {
 
   const handleCopyClipBoard = () => {
     if (selectedOption === "flashcard") {
-      // Convert Q/A array to plain text
       const textToCopy = flashcardData
         .map((item) => `Q: ${item.Q}\nA: ${item.A}`)
         .join("\n\n");
@@ -108,20 +116,69 @@ const HomePage = () => {
     }
   };
 
+  const fileInputRef = useRef(null);
+
+  const handleIconClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const extractPdfText = async (file) => {
+    const url = URL.createObjectURL(file);
+    const pdf = await pdfjsLib.getDocument(url).promise;
+
+    let extractedText = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      extractedText += content.items.map((item) => item.str).join(" ") + "\n\n";
+    }
+
+    return extractedText;
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+
+    // Allow sending once a file is chosen
+    setIsSendDisabled(false);
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    let finalText = input;
+
+    // ⬇️ If a PDF was uploaded, extract text now (NOT during selection)
+    if (selectedFile && selectedFile.type === "application/pdf") {
+      try {
+        finalText = await extractPdfText(selectedFile);
+      } catch (err) {
+        console.error("PDF extraction failed:", err);
+        failedNotification({
+          message: "Couldn't extract text from the PDF",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
     const formData = {
-      content: input,
+      content: finalText,
       option: selectedOption,
     };
 
     console.log(formData);
 
-    if (formData.option === "summarize") {
-      try {
-        setLoading(true);
-        setInput("");
+    try {
+      setInput("");
 
+      if (selectedOption === "summarize") {
         const serverResponse = await axios.post(
           `${userProfileURI}/summary`,
           formData,
@@ -130,31 +187,38 @@ const HomePage = () => {
 
         setTitle(serverResponse.data?.data[0]?.userPromptTitle);
         setGeminiResponse(serverResponse.data?.data[0]?.aiResponse);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
         setResponseCard(true);
-      }
-    } else if (formData.option === "flashcard") {
-      try {
-        setLoading(true);
-        setInput("");
-
+      } else if (selectedOption === "flashcard") {
         const serverResponse = await axios.post(
           `${userProfileURI}/flashcard`,
           formData,
           { withCredentials: true }
         );
 
-        console.log(serverResponse);
-        setGeminiResponse(serverResponse?.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
+        setGeminiResponse(serverResponse?.data?.data[0]?.aiResponse);
         setResponseCard(true);
+      } else {
+        const quizFormData = {
+          content: finalText,
+          option: selectedOption,
+          difficulty: selectedDifficulty,
+        };
+
+        console.log(quizFormData);
+
+        const serverResponse = await axios.post(
+          `${userProfileURI}/quiz`,
+          quizFormData,
+          { withCredentials: true }
+        );
+
+        setGeminiResponse(serverResponse?.data?.data[0]?.aiResponse);
+        userNavigation("/quiz");
       }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -192,9 +256,10 @@ const HomePage = () => {
                 {selectedOption === "flashcard" && "Flashcard"}
               </p>
             )}
+
             <div className="w-[90%] h-[1px] bg-white/30"></div>
             <div
-              className={`w-full px-6 text-[18px] ${
+              className={`w-full px-6 text-[18px] flex flex-col justify-end items-end ${
                 selectedOption === "flashcard" &&
                 "flex justify-center items-center flex-col"
               }`}
@@ -230,15 +295,13 @@ const HomePage = () => {
                     return <p className="text-white">Invalid JSON format</p>;
                   }
 
-                  console.log(flashcardData);
-
                   return flashcardData.map((item, index) => (
                     <div
                       key={index}
                       className="w-11/12 p-5 border-b mb-10 border-white/70"
                     >
                       <p>
-                        <strong>Q:</strong> {item.Q}
+                        <strong>Q{index + 1}:</strong> {item.Q}
                       </p>
                       <p>
                         <strong>A:</strong> {item.A}
@@ -250,9 +313,9 @@ const HomePage = () => {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen min-w-full bg-black/90 relative flex justify-end items-start">
+        <div className="min-h-screen min-w-full bg-[#131314] relative flex justify-end items-start">
           <div
-            className={`h-screen border-r-2 border-white/5 sm:flex justify-between flex-col text-white absolute top-0 left-0 px-6 py-5 hidden z-50`}
+            className={`h-screen border-r-2 border-white/5 sm:flex justify-between flex-col text-white absolute top-0 left-0 px-6 py-5 hidden z-50 bg-[#1f2021]`}
           >
             <div className="w-full flex flex-col justify-center items-center gap-8 py-1">
               <div className="h-[40px] w-[40px] rounded-[50%] overflow-hidden">
@@ -325,12 +388,69 @@ const HomePage = () => {
 
             <div className="w-full min-h-[97vh]  flex flex-col items-center gap-12 text-white">
               <h1 className="text-3xl mt-[250px] text-center">
-                How can I help, {userData?.name?.toUpperCase() || ""}?
+                How can I help,{" "}
+                <span className="text-[#458DFA]">
+                  {userData?.name?.toUpperCase() || ""} ?
+                </span>
               </h1>
 
-              <form className="bg-white/5 w-[90vw] sm:w-[60vw] md:w-[60vw]  lg:w-[50vw] xl:w-[40vw] py-6 px-4 flex flex-col gap-3 rounded-4xl items-center shadow-gray-400/10 shadow-md">
-                <div className="flex gap-2 items-center justify-center w-full">
-                  <div className="hover:bg-white/5 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer">
+              <form
+                className="bg-[#131314] w-[90vw] sm:w-[60vw] md:w-[60vw] lg:w-[50vw] xl:w-[40vw] px-4 flex flex-col gap-3 rounded-4xl items-center shadow-white/10 shadow-md outline-[1.5px] outline-white/10
+"
+              >
+                <div className="flex gap-2 items-center justify-center w-full mt-5">
+                  {previewUrl && (
+                    <div className="w-full mt-4 bg-white/5 p-3 rounded-xl flex flex-col gap-3">
+                      {/* File Name */}
+                      <p className="text-white/80 text-sm">
+                        {selectedFile.name}
+                      </p>
+
+                      {/* Image Preview */}
+                      {selectedFile.type.startsWith("image/") && (
+                        <img
+                          src={previewUrl}
+                          alt="preview"
+                          className="max-h-[200px] rounded-lg object-contain"
+                        />
+                      )}
+
+                      {/* PDF Preview */}
+                      {selectedFile.type === "application/pdf" && (
+                        <iframe
+                          src={previewUrl}
+                          className="w-full h-[200px] rounded-lg"
+                          title="pdf preview"
+                        ></iframe>
+                      )}
+
+                      {/* Remove preview button */}
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewUrl(null);
+                            setSelectedFile(null);
+                          }}
+                          className="text-white/70 hover:text-white/100 transition-all"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  <div
+                    className="hover:bg-white/5 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer"
+                    onClick={handleIconClick}
+                  >
                     <IoAddOutline size={28} />
                   </div>
 
@@ -367,26 +487,46 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                <div className="h-[1px] w-[90%] bg-white/50 mb-2"></div>
-
-                <div className="w-full flex flex-wrap justify-center items-center gap-4 sm:gap-8 mt-2 px-4">
-                  {["summarize", "flashcard", "quiz"].map((option) => (
-                    <div
-                      key={option}
-                      className="flex px-4 py-1 rounded-md transition-all duration-200"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedOption(option)}
-                        className={`h-full w-full text-white px-2 py-1 rounded-md capitalize cursor-pointer transition-all duration-200 
-          ${selectedOption === option ? "bg-white/10" : "hover:bg-white/10"}`}
-                      >
-                        {option}
-                      </button>
+                <div className="w-fit flex flex-wrap justify-center items-center gap-4 sm:gap-8 mt-2 px-4 relative">
+                  {selectedOption === "quiz" && (
+                    <div className="flex px-4 py-3 rounded-md transition-all duration-200 flex-col gap-3 absolute bg-black top-[0%] right-[-900%]">
+                      {["easy", "medium", "hard"].map((difficulty) => (
+                        <button
+                          key={difficulty}
+                          type="button"
+                          onClick={() => setSelectedDifficulty(difficulty)}
+                          className={`h-full w-full text-white px-2 py-1 rounded-md capitalize cursor-pointer transition-all duration-200 
+          ${
+            selectedDifficulty === difficulty
+              ? "bg-white/10"
+              : "hover:bg-white/10"
+          }`}
+                        >
+                          {difficulty}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               </form>
+
+              <div className="w-full flex justify-center">
+                {["summarize", "flashcard", "quiz"].map((option) => (
+                  <div
+                    key={option}
+                    className="flex px-4 py-1 rounded-md transition-all duration-200"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOption(option)}
+                      className={`h-full w-fit text-white p-4 rounded-4xl capitalize cursor-pointer transition-all duration-200 
+          ${selectedOption === option ? "bg-white/10" : "hover:bg-white/10"}`}
+                    >
+                      {option}
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

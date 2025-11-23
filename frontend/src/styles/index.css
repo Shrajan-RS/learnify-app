@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
+body {
+  font-family: "Bebas Neue", sans-serif;
+  font-weight: 600;
+} */
+
 /* Autofill background fix for Chrome, Edge, Safari */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -20,5 +27,5 @@ select:-webkit-autofill {
 }
 
 ::-webkit-scrollbar {
-display: none;
+  display: none;
 }

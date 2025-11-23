@@ -12,6 +12,7 @@ const generateGeminiResponse = async (content) => {
       contents: [{ role: "user", parts: [{ text: content }] }],
     });
 
+
     return response;
   } catch (error) {
     console.log(error);

@@ -46,9 +46,6 @@ Content: ${content}
   const title = titlePart.replace("title:", "").trim(" ");
   const aiResponse = contentPart;
 
-  console.log("title: ", title);
-  console.log("content: ", aiResponse);
-
   const message = await UserChat.create({
     user: id,
     messages: [
@@ -108,9 +105,104 @@ ${content}
 
   const aiResponse = geminiResponse?.text;
 
-  console.log(aiResponse);
+  const message = await UserChat.create({
+    user: id,
+    messages: [
+      {
+        userPromptType: option,
+        userPrompt: content,
+        aiResponse,
+      },
+    ],
+  });
 
-  res.status(200).json(aiResponse);
+  await User.findByIdAndUpdate(
+    id,
+    { $push: { message: message._id } },
+    { new: true }
+  );
+
+  res.status(200).json(new ApiResponse(200, "success", message.messages));
 });
 
-export { getCurrentUser, summarize, flashCard };
+const quiz = asyncHandler(async (req, res) => {
+  const { content, option, difficulty } = req.body;
+
+  const { id } = req.user;
+
+  const customQuizPrompt = `
+I want you to act as an expert quiz creator.
+Your mission is to generate high-quality, clear, and well-balanced quiz questions based on the content I'll provide.
+
+🎯 Requirements:
+
+- Use the difficulty level I provide (easy, medium, or hard) to shape the style, depth, and complexity of the questions.
+
+- Each quiz item must include:
+  • Q: (the question)
+  • options: [array of 4 options]
+  • answer: (the correct option)
+  • explanation: (quick, simple reasoning)
+
+- Questions should target understanding, not just memorization — focus on concepts, logic, application, and key details.
+
+- Keep wording modern, clean, and student-friendly. No fluff. No walls of text.
+
+- Make the options believable but not confusing or repetitive.
+
+- If the content includes multiple themes, spread questions across them evenly.
+
+- Return everything as an array of objects only.
+
+Format example:
+{
+  Q: "What does X mean?",
+  options: ["A", "B", "C", "D"],
+  answer: "B",
+  explanation: "Short explanation here."
+}
+
+Here’s the content and difficulty:
+content: ${content}
+difficulty: ${difficulty}
+`;
+
+  const geminiResponse = await generateGeminiResponse(customQuizPrompt);
+  const aiResponse = geminiResponse?.text;
+
+  const message = await UserChat.create({
+    user: id,
+    messages: [
+      {
+        userPromptType: option,
+        quizDifficulty: difficulty,
+        userPrompt: content,
+        aiResponse,
+      },
+    ],
+  });
+
+  await User.findByIdAndUpdate(
+    id,
+    { $push: { message: message._id } },
+    { new: true }
+  );
+
+  res.status(200).json(new ApiResponse(200, "success", message.messages));
+});
+
+const getCurrentQuizData = asyncHandler(async (req, res) => {
+  const quizId = req.params.id;
+
+  const quizData = await UserChat.findById(quizId);
+
+  console.log(quizId);
+
+  res.status(200).json(
+    new ApiResponse(200, "success", {
+      quizData: quizData?.messages?.[0]?.aiResponse,
+    })
+  );
+});
+
+export { getCurrentUser, summarize, flashCard, quiz, getCurrentQuizData };
