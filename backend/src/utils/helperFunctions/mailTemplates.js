@@ -7,87 +7,111 @@ const accountVerificationOTP = `
     <title>Email Verification</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background-color: #f6f9fc;
         margin: 0;
         padding: 0;
+        background: #f5f7fb;
+        font-family: "Inter", Arial, sans-serif;
+        color: #1a1a1a;
       }
+
       .container {
-        background-color: #ffffff;
-        max-width: 600px;
+        max-width: 550px;
         margin: 40px auto;
-        border-radius: 8px;
+        background: #ffffff;
+        border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
       }
+
       .header {
-        background-color: #4a90e2;
-        color: #ffffff;
+        background: linear-gradient(135deg, #111827, #1f2937);
         text-align: center;
-        padding: 30px 20px;
+        padding: 45px 25px;
+        color: #fff;
       }
+
       .header h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
       }
+
       .content {
-        padding: 30px 20px;
-        color: #333333;
-        line-height: 1.6;
+        padding: 35px 28px;
+        line-height: 1.7;
+        font-size: 15px;
       }
+
       .content h2 {
-        font-size: 20px;
         margin-top: 0;
+        font-size: 22px;
+        font-weight: 600;
       }
-      .button {
-        display: inline-block;
-        background-color: #4a90e2;
-        color: #ffffff;
-        text-decoration: none;
-        padding: 12px 24px;
-        border-radius: 6px;
-        margin: 20px 0;
-        font-weight: bold;
+
+      .otp-box {
+        margin: 25px 0;
+        padding: 16px 20px;
+        background: #f3f6ff;
+        border-left: 4px solid #4a90e2;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #1e3a8a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
+
       .footer {
-        background-color: #f1f1f1;
         text-align: center;
-        padding: 15px;
-        font-size: 12px;
-        color: #777777;
+        padding: 18px;
+        background: #484849;
+        font-size: 15px;
+        color: #ffffff;
       }
+
       @media (max-width: 600px) {
-        .content,
+        .content {
+          padding: 25px 18px;
+        }
         .header {
-          padding: 20px 15px;
+          padding: 35px 20px;
         }
       }
     </style>
   </head>
+
   <body>
     <div class="container">
       <div class="header">
-        <h1>Verify Your Email Address</h1>
+        <h1>Email Verification</h1>
       </div>
+
       <div class="content">
         <h2>Hello username,</h2>
-        <p>
-          Thank you for signing up! To complete your registration, please verify
-          your email.
-        </p>
-
-        <p>Your OTP is</p>
-        <p><b>{otp}</b></p>
 
         <p>
-          If you did not create an account, you can safely ignore this email.
+          Welcome aboard! Before we let you in, you just need to verify your
+          email.
         </p>
-        <p>Thank you,<br />Learnify AI</p>
+
+        <div class="otp-box">{otp}</div>
+
+        <p>
+          If you didn't sign up for Learnify AI, feel free to ignore this
+          message — no hard feelings.
+        </p>
+
+        <p>Cheers,<br />Learnify AI</p>
       </div>
+
       <div class="footer">&copy; 2025 Learnify. All rights reserved.</div>
     </div>
   </body>
 </html>
+
 `;
 
 export { accountVerificationOTP };

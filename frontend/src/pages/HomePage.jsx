@@ -17,6 +17,9 @@ import { FaClipboard } from "react-icons/fa";
 import { FaClipboardCheck } from "react-icons/fa";
 import { customNotification, failedNotification } from "../utils/notification";
 
+import { MdWbSunny } from "react-icons/md";
+import { FaMoon } from "react-icons/fa";
+
 import * as pdfjsLib from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
@@ -24,6 +27,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 const HomePage = () => {
   const { isLoading, userData } = useCurrentUser();
+
   const { getCurrentUser } = useUser();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const userNavigation = useNavigate();
@@ -36,6 +40,8 @@ const HomePage = () => {
 
   const [selectedOption, setSelectedOption] = useState("summarize");
   const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
+
+  const [isDarkTheme, setIsDarkTheme] = useState(userData?.isDarkTheme);
 
   let flashcardData = [];
 
@@ -51,7 +57,7 @@ const HomePage = () => {
     const getWordLength = () => {
       const wordLength = input.trim().length;
 
-      if (wordLength > 1500) {
+      if (wordLength >= 1) {
         setIsSendDisabled(false);
       } else {
         setIsSendDisabled(true);
@@ -60,6 +66,30 @@ const HomePage = () => {
 
     getWordLength();
   }, [input]);
+
+  const handleThemeChange = async () => {
+    try {
+      const response = await axios.post(
+        `${userProfileURI}/themeChange`,
+        { isDarkTheme: !isDarkTheme },
+        { withCredentials: true }
+      );
+
+      setIsDarkTheme(response?.data?.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handlePreviousChats = () => {
+    userNavigation("/previous-chats");
+  };
+
+  useEffect(() => {
+    if (userData?.isDarkTheme !== undefined) {
+      setIsDarkTheme(userData.isDarkTheme);
+    }
+  }, [userData]);
 
   const handleInput = (e) => {
     setInput(e.target.value);
@@ -144,7 +174,6 @@ const HomePage = () => {
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
 
-    // Allow sending once a file is chosen
     setIsSendDisabled(false);
   };
 
@@ -154,7 +183,6 @@ const HomePage = () => {
 
     let finalText = input;
 
-    // ⬇️ If a PDF was uploaded, extract text now (NOT during selection)
     if (selectedFile && selectedFile.type === "application/pdf") {
       try {
         finalText = await extractPdfText(selectedFile);
@@ -173,11 +201,7 @@ const HomePage = () => {
       option: selectedOption,
     };
 
-    console.log(formData);
-
     try {
-      setInput("");
-
       if (selectedOption === "summarize") {
         const serverResponse = await axios.post(
           `${userProfileURI}/summary`,
@@ -204,8 +228,6 @@ const HomePage = () => {
           difficulty: selectedDifficulty,
         };
 
-        console.log(quizFormData);
-
         const serverResponse = await axios.post(
           `${userProfileURI}/quiz`,
           quizFormData,
@@ -223,14 +245,24 @@ const HomePage = () => {
   };
 
   return (
-    <section className="min-h-screen w-full">
+    <section className="min-h-screen w-full relative">
+      <button
+        onClick={handleThemeChange}
+        className={`absolute right-[1%] top-[2%] z-50 cursor-pointer p-4 transition-all duration-200 ease-in rounded-md ${
+          isDarkTheme
+            ? "hover:bg-white/10 text-white"
+            : "hover:bg-black/10 text-black"
+        } `}
+      >
+        {isDarkTheme ? <MdWbSunny size={25} /> : <FaMoon size={25} />}
+      </button>
       {isLoading || loading ? (
-        <div className="min-h-screen min-w-full flex justify-center items-center bg-black/90 ">
+        <div className="min-h-screen min-w-full flex justify-center items-center bg-[#131314] ">
           <ClimbingBoxLoader size={40} color="white" />
         </div>
       ) : responseCard ? (
-        <div className="min-h-screen min-w-full bg-black/90 flex justify-center items-start p-2">
-          <div className="text-white bg-white/10 w-[90vw] sm:w-[80vw] md:w-[80vw] lg:w-[80vw] xl:w-[80vw] py-6 px-4 flex flex-col gap-3.5 rounded-lg items-center shadow-gray-400/10 shadow-md mt-24 max-h-fit justify-center">
+        <div className="min-h-screen min-w-full bg-[#131314] flex justify-center items-start p-2">
+          <div className="text-white bg-[#1E2939] w-[90vw] sm:w-[80vw] md:w-[80vw] lg:w-[80vw] xl:w-[80vw] py-6 px-4 flex flex-col gap-3.5 rounded-lg items-center shadow-gray-400/10 shadow-md mt-24 max-h-fit justify-center">
             <div className="w-full px-2 flex justify-end gap-4 items-center flex-col sm:flex-row">
               <FaClipboard
                 size={40}
@@ -298,7 +330,7 @@ const HomePage = () => {
                   return flashcardData.map((item, index) => (
                     <div
                       key={index}
-                      className="w-11/12 p-5 border-b mb-10 border-white/70"
+                      className="w-11/12 p-2 border-b mb-10 border-white/70"
                     >
                       <p>
                         <strong>Q{index + 1}:</strong> {item.Q}
@@ -313,9 +345,17 @@ const HomePage = () => {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen min-w-full bg-[#131314] relative flex justify-end items-start">
+        <div
+          className={`min-h-screen min-w-full transition-all duration-200 ease-in ${
+            isDarkTheme ? "bg-[#131314]" : "bg-gray-200"
+          } relative flex justify-end items-start`}
+        >
           <div
-            className={`h-screen border-r-2 border-white/5 sm:flex justify-between flex-col text-white absolute top-0 left-0 px-6 py-5 hidden z-50 bg-[#1f2021]`}
+            className={`h-screen border-r-2  sm:flex justify-between flex-col transition-all absolute top-0 left-0 px-6 py-5 hidden z-50 duration-200 ${
+              isDarkTheme
+                ? "bg-[#1f2021] text-white border-white/5"
+                : "bg-white text-black border-black/20"
+            }`}
           >
             <div className="w-full flex flex-col justify-center items-center gap-8 py-1">
               <div className="h-[40px] w-[40px] rounded-[50%] overflow-hidden">
@@ -329,8 +369,11 @@ const HomePage = () => {
               </div>
               <div className="w-full flex justify-center items-center">
                 <button
+                  onClick={handlePreviousChats}
                   title="Previous Chats"
-                  className="cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
+                  className={`cursor-pointer p-2 rounded-lg ${
+                    isDarkTheme ? "hover:bg-white/10" : "hover:bg-black/10"
+                  } transition-all duration-200`}
                 >
                   <RiChatSearchFill size={25} />
                 </button>
@@ -341,7 +384,9 @@ const HomePage = () => {
               <button
                 title="Logout"
                 onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-white/10 transition-all duration-200 cursor-pointer"
+                className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                  isDarkTheme ? "hover:bg-white/10" : "hover:bg-black/10"
+                }`}
               >
                 <MdLogout size={25} />
               </button>
@@ -356,7 +401,7 @@ const HomePage = () => {
             </div>
 
             {isNavOpen && (
-              <div className="bg-[#242424] h-[180px] w-[150px] absolute top-0 left-0 rounded-tr-lg rounded-br-lg sm:hidden flex justify-between items-center flex-col overflow-hidden text-white p-2 gap-3">
+              <div className="bg-[#1E2939] h-[180px] w-[150px] absolute top-0 left-0 rounded-tr-lg rounded-br-lg sm:hidden flex justify-between items-center flex-col overflow-hidden text-white p-2 gap-3">
                 <div className="flex w-full justify-end p-2">
                   <button onClick={() => setIsNavOpen((prev) => !prev)}>
                     <IoClose size={30} />
@@ -387,16 +432,30 @@ const HomePage = () => {
             )}
 
             <div className="w-full min-h-[97vh]  flex flex-col items-center gap-12 text-white">
-              <h1 className="text-3xl mt-[250px] text-center">
+              <h1
+                className={`text-3xl mt-[250px] ${
+                  isDarkTheme ? "text-white" : "text-black"
+                } text-center`}
+              >
                 How can I help,{" "}
-                <span className="text-[#458DFA]">
+                <span
+                  className={`${
+                    isDarkTheme ? "text-[#FFD900]" : "text-[#458DFA]"
+                  }`}
+                >
                   {userData?.name?.toUpperCase() || ""} ?
                 </span>
               </h1>
 
               <form
-                className="bg-[#131314] w-[90vw] sm:w-[60vw] md:w-[60vw] lg:w-[50vw] xl:w-[40vw] px-4 flex flex-col gap-3 rounded-4xl items-center shadow-white/10 shadow-md outline-[1.5px] outline-white/10
-"
+                className={`${
+                  isDarkTheme ? "bg-[#131314]" : "bg-gray-200"
+                } w-[90vw] sm:w-[60vw] md:w-[60vw] lg:w-[50vw] xl:w-[40vw] px-4 flex flex-col gap-3 rounded-4xl transition-all duration-200 items-center ${
+                  isDarkTheme
+                    ? "shadow-white/10 shadow-md outline-[1.5px] hover:shadow-xl outline-white/10"
+                    : "shadow-black/10 shadow-lg hover:shadow-2xl outline-[3px] outline-black/10"
+                }
+`}
               >
                 <div className="flex gap-2 items-center justify-center w-full mt-5">
                   {previewUrl && (
@@ -448,7 +507,11 @@ const HomePage = () => {
                   />
 
                   <div
-                    className="hover:bg-white/5 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer"
+                    className={`${
+                      isDarkTheme
+                        ? "hover:bg-white/5"
+                        : "hover:bg-black/5 text-black"
+                    } p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer`}
                     onClick={handleIconClick}
                   >
                     <IoAddOutline size={28} />
@@ -461,26 +524,38 @@ const HomePage = () => {
                       value={input}
                       onInput={handleInput}
                       placeholder="Ask Anything..."
-                      className="w-full resize-none overflow-hidden text-[15px] bg-transparent outline-0 text-white placeholder:text-white/70 transition-all duration-200 max-h-[260px]"
+                      className={`w-full resize-none overflow-hidden text-[15px] bg-transparent outline-0 ${
+                        isDarkTheme
+                          ? "text-white placeholder:text-white/70"
+                          : "text-black placeholder:text-black/70"
+                      } transition-all duration-200 max-h-[260px]`}
                     />
                   </div>
 
                   <div
-                    className={
-                      isSendDisabled
+                    className={`${
+                      isDarkTheme
+                        ? isSendDisabled
+                          ? "p-2 rounded-4xl flex h-[45px] w-[45px] justify-center items-center cursor-no-drop"
+                          : "hover:bg-white/5 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer"
+                        : isSendDisabled
                         ? "p-2 rounded-4xl flex h-[45px] w-[45px] justify-center items-center cursor-no-drop"
-                        : "hover:bg-white/5 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer"
-                    }
+                        : "hover:bg-black/10 p-2 h-[45px] w-[45px] rounded-4xl flex justify-center items-center cursor-pointer"
+                    }`}
                   >
                     <button
                       type="submit"
                       disabled={isSendDisabled}
                       onClick={handleFormSubmit}
-                      className={
-                        isSendDisabled
-                          ? "cursor-no-drop text-white/50"
-                          : "cursor-pointer text-white"
-                      }
+                      className={`${
+                        isDarkTheme
+                          ? isSendDisabled
+                            ? "cursor-no-drop text-white/50"
+                            : "cursor-pointer text-white"
+                          : isSendDisabled
+                          ? "cursor-no-drop text-black/50"
+                          : "cursor-pointer text-black"
+                      } `}
                     >
                       <IoIosSend size={28} />
                     </button>
@@ -489,17 +564,27 @@ const HomePage = () => {
 
                 <div className="w-fit flex flex-wrap justify-center items-center gap-4 sm:gap-8 mt-2 px-4 relative">
                   {selectedOption === "quiz" && (
-                    <div className="flex px-4 py-3 rounded-md transition-all duration-200 flex-col gap-3 absolute bg-black top-[0%] right-[-900%]">
+                    <div
+                      className={`flex px-4 py-3 rounded-md transition-all duration-200 flex-col gap-3 absolute ${
+                        isDarkTheme ? "bg-black" : "bg-white"
+                      } top-[0%] right-[-900%]`}
+                    >
                       {["easy", "medium", "hard"].map((difficulty) => (
                         <button
                           key={difficulty}
                           type="button"
                           onClick={() => setSelectedDifficulty(difficulty)}
-                          className={`h-full w-full text-white px-2 py-1 rounded-md capitalize cursor-pointer transition-all duration-200 
+                          className={`h-full w-full ${
+                            isDarkTheme ? "text-white" : "text-black"
+                          } px-2 py-1 rounded-md capitalize cursor-pointer transition-all duration-200 
           ${
-            selectedDifficulty === difficulty
-              ? "bg-white/10"
-              : "hover:bg-white/10"
+            isDarkTheme
+              ? selectedDifficulty === difficulty
+                ? "bg-white/10"
+                : "hover:bg-white/10"
+              : selectedDifficulty === difficulty
+              ? "bg-black/10"
+              : "hover:bg-black/10"
           }`}
                         >
                           {difficulty}
@@ -519,8 +604,18 @@ const HomePage = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedOption(option)}
-                      className={`h-full w-fit text-white p-4 rounded-4xl capitalize cursor-pointer transition-all duration-200 
-          ${selectedOption === option ? "bg-white/10" : "hover:bg-white/10"}`}
+                      className={`h-full w-fit ${
+                        isDarkTheme ? "text-white" : "text-black"
+                      } p-4 rounded-4xl capitalize cursor-pointer transition-all duration-200 hover:text-[18px] hover:mx-6
+          ${
+            isDarkTheme
+              ? selectedOption === option
+                ? "bg-white/10"
+                : "hover:bg-white/10"
+              : selectedOption === option
+              ? "bg-black/10"
+              : "hover:bg-black/10"
+          }`}
                     >
                       {option}
                     </button>

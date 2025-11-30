@@ -14,8 +14,8 @@ function QuizPage() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [timer, setTimer] = useState(60);
   const [showResults, setShowResults] = useState(false);
+  const [correctAnswer, SetCorrectAnswer] = useState(0);
 
-  // Fetch quiz
   const getCurrentQuiz = async () => {
     try {
       const quizId = userData?.message?.slice(-1)[0];
@@ -62,13 +62,16 @@ function QuizPage() {
   const handleSelect = (option) => {
     setSelected(option);
     setShowExplanation(true);
+
+    if (option === quiz[index].answer) {
+      SetCorrectAnswer((prev) => prev + 1);
+    }
   };
 
   const handleSkip = () => {
     setSelected("SKIPPED");
     setShowExplanation(false);
 
-    // auto move
     setTimeout(() => {
       nextQuestion();
     }, 400);
@@ -81,11 +84,10 @@ function QuizPage() {
       setShowExplanation(false);
       setTimer(60);
     } else {
-      setShowResults(true); // <--- instead of alert
+      setShowResults(true);
     }
   };
 
-  // Now it's safe to early-return
   if (!quiz) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white text-xl">
@@ -105,8 +107,14 @@ function QuizPage() {
         >
           <FaHome size={30} />
         </Link>
+
         <div className="bg-gray-800 text-white w-full max-w-2xl p-6 rounded-xl shadow-lg space-y-6">
           <h1 className="text-3xl font-bold text-center">Results 🎉</h1>
+
+          <h2 className="text-center text-xl font-semibold">
+            Your Score: {correctAnswer} / {quiz.length}
+          </h2>
+
           <p className="opacity-80 text-center mb-4">
             Answer's for all the questions
           </p>
@@ -147,7 +155,7 @@ function QuizPage() {
 
       <div className="bg-gray-800 text-white w-full max-w-xl p-6 rounded-xl shadow-lg space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Quiz Game </h1>
+          <h1 className="text-2xl font-bold">Quiz Game</h1>
 
           {/* Question counter */}
           <p className="text-lg opacity-80">
@@ -174,7 +182,7 @@ function QuizPage() {
             const isCorrect = opt === current.answer;
             const isSelected = opt === selected;
 
-            const letters = ["A", "B", "C", "D"]; // <-- labels
+            const letters = ["A", "B", "C", "D"];
 
             return (
               <button
@@ -182,16 +190,16 @@ function QuizPage() {
                 onClick={() => handleSelect(opt)}
                 disabled={selected !== null}
                 className={`w-full text-left px-4 py-3 rounded-lg transition cursor-pointer
-        ${
-          selected
-            ? isSelected
-              ? isCorrect
-                ? "bg-green-500 text-black"
-                : "bg-red-500 text-black"
-              : "bg-gray-700"
-            : "bg-gray-700 hover:bg-gray-600"
-        }
-      `}
+                  ${
+                    selected
+                      ? isSelected
+                        ? isCorrect
+                          ? "bg-green-500 text-black"
+                          : "bg-red-500 text-black"
+                        : "bg-gray-700"
+                      : "bg-gray-700 hover:bg-gray-600"
+                  }
+                `}
               >
                 <span className="font-bold mr-2">{letters[i]}.</span>
                 {opt}

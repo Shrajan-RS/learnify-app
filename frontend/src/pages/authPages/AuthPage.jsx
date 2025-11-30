@@ -19,7 +19,7 @@ function AuthPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
   const [OTP, setOTP] = useState({ OTP: "" });
-  const [time, setTime] = useState(10);
+  const [time, setTime] = useState(30);
   const [disableResendOTP, setDisableResendOTP] = useState(false);
 
   const { getCurrentUser } = useUser();

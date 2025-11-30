@@ -39,8 +39,6 @@ Content: ${content}
 
   const geminiResponse = await generateGeminiResponse(customSummarizePrompt);
 
-  console.log(geminiResponse?.text);
-
   const [titlePart, contentPart] = geminiResponse.text.split("content:");
 
   const title = titlePart.replace("title:", "").trim(" ");
@@ -196,8 +194,6 @@ const getCurrentQuizData = asyncHandler(async (req, res) => {
 
   const quizData = await UserChat.findById(quizId);
 
-  console.log(quizId);
-
   res.status(200).json(
     new ApiResponse(200, "success", {
       quizData: quizData?.messages?.[0]?.aiResponse,
@@ -205,4 +201,93 @@ const getCurrentQuizData = asyncHandler(async (req, res) => {
   );
 });
 
-export { getCurrentUser, summarize, flashCard, quiz, getCurrentQuizData };
+const changeTheme = asyncHandler(async (req, res) => {
+  const { id } = req.user;
+  const user = await User.findById(id);
+
+  const theme = user?.isDarkTheme;
+
+  const updatedTheme = await User.findByIdAndUpdate(
+    id,
+    {
+      isDarkTheme: !theme,
+    },
+    { new: true }
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "success", updatedTheme?.isDarkTheme));
+});
+
+const getPreviousSummary = asyncHandler(async (req, res) => {
+  const [array] = req.body;
+
+  let responseArray = [];
+
+  for (let i = 0; i < array.length; i++) {
+    const content = await UserChat.findById(array[i]);
+
+    if (content?.messages[0]?.userPromptType === "summarize") {
+      responseArray.push({
+        title: content?.messages[0]?.userPromptTitle,
+        aiResponse: content?.messages[0]?.aiResponse,
+      });
+    }
+  }
+
+  res.status(200).json(new ApiResponse(200, "success", responseArray));
+});
+
+const getPreviousFlashCard = asyncHandler(async (req, res) => {
+  const [array] = req.body;
+
+  let responseArray = [];
+
+  for (let i = 0; i < array.length; i++) {
+    const content = await UserChat.findById(array[i]);
+
+    if (content?.messages[0]?.userPromptType === "flashcard") {
+      responseArray.push({
+        aiResponse: content?.messages[0]?.aiResponse,
+      });
+    }
+  }
+
+  console.log(responseArray);
+
+  res.status(200).json(new ApiResponse(200, "success", responseArray));
+});
+
+const getPreviousQuiz = asyncHandler(async (req, res) => {
+  const [array] = req.body;
+
+  let responseArray = [];
+
+  for (let i = 0; i < array.length; i++) {
+    const content = await UserChat.findById(array[i]);
+
+    if (content?.messages[0]?.userPromptType === "quiz") {
+      responseArray.push({
+        difficulty: content?.messages[0]?.quizDifficulty,
+        aiResponse: content?.messages[0]?.aiResponse,
+      });
+    }
+  }
+
+  console.log(responseArray);
+
+  res.status(200).json(new ApiResponse(200, "success", responseArray));
+});
+
+export {
+  getCurrentUser,
+  summarize,
+  flashCard,
+  quiz,
+  getCurrentQuizData,
+  changeTheme,
+  getPreviousSummary,
+  getPreviousFlashCard,
+  getPreviousQuiz,
+};

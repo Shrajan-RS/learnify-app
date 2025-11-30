@@ -31,6 +31,10 @@ const userSchema = new Schema(
       enum: ["student", "lecturer"],
       default: "student",
     },
+    isDarkTheme: {
+      type: Boolean,
+      default: false,
+    },
 
     message: [{ type: Schema.Types.ObjectId, ref: "UserChat" }],
   },
