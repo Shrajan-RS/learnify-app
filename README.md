@@ -548,19 +548,6 @@ Before production deployment, the following improvements are planned:
 * [x] Protected API routes
 * [x] Authentication rate limiting
 
-### Planned
-
-* [ ] Firebase ID-token verification on backend
-* [ ] Structured Gemini response validation
-* [ ] PDF chunking for large documents
-* [ ] Image-based study material
-* [ ] Quiz attempt history
-* [ ] Study analytics
-* [ ] Spaced-repetition flashcards
-* [ ] Search/filtering for study history
-* [ ] Automated tests
-* [ ] Production deployment
-* [ ] Monitoring and observability
 
 ---
 
