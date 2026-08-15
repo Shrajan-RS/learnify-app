@@ -585,16 +585,30 @@ The project demonstrates experience with:
 
 ---
 
-## 👨‍💻 Author
+## 👥 Team & Contributions
 
-**Shrajan R.S.**
+Learnify AI was developed as a **college mini-project by a student team**.
 
-Computer Science Engineering Student
+### Shrajan R.S. — Full-Stack Development & AI Integration
 
-**Focus:** Full-Stack Development · AI Applications · JavaScript
+My primary contributions focused on the core technical implementation of the application, including:
 
----
+* Designed the overall full-stack application architecture.
+* Developed the React frontend and interactive study experience.
+* Built the Node.js/Express backend and REST API layer.
+* Implemented JWT authentication and protected API routes.
+* Implemented email verification with OTP generation, expiration, and resend functionality.
+* Integrated Firebase Authentication for Google sign-in.
+* Designed MongoDB/Mongoose models and persistent study history.
+* Integrated Google Gemini for AI-powered summaries, flashcards, and quizzes.
+* Implemented PDF text extraction using PDF.js.
+* Built the interactive quiz system, including difficulty selection, timer, scoring, and answer explanations.
+* Implemented theme preferences and previous study-session retrieval.
+* Added authentication rate limiting, HTTP-only cookies, and other security measures.
 
-## 📄 License
+Other team members contributed to the project as part of the overall college project.
+
+> The contribution list highlights the areas I was primarily responsible for during development.
+
 
 This project is available under the license specified in the repository.
